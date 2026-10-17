@@ -1,0 +1,15 @@
+export const sekolah = {
+  nama: "MAN 1 Wonosobo",
+  namaLengkap: "Madrasah Aliyah Negeri 1 Wonosobo",
+  slogan: "Mulia Dalam Restu Wali",
+  alamat: "Mendolo, Jalan Raya No. KM 03, Bumireso, Kecamatan Wonosobo, Kabupaten Wonosobo, Jawa Tengah 56351",
+  telepon: "(0286) 322129",
+  email: "manwonosobo@gmail.com",
+  emailTu: "tu_mansobow@gmail.com",
+  instagram: "https://www.instagram.com/man1wonosobo/",
+  instagramHandle: "@man1wonosobo",
+  facebook: "https://www.facebook.com/man1wonosobo",
+  youtube: "https://www.youtube.com/@man1wonosobo",
+  tiktok: "https://www.tiktok.com/@man1wonosobo",
+  tahun: 2026,
+};

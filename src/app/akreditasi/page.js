@@ -7,7 +7,7 @@ const akreditasi = {
   nomorSk: "477/BAN-SM/SK/2023",
   tahun: "2023 (ditetapkan 28 April 2023)",
   berlaku: "5 (lima) tahun, hingga 28 April 2028",
-  gambar: "/sertifikat-akreditasi.jpg",
+  gambar: "/sertifikat-akreditasi.png",
 };
 
 export default function Akreditasi() {

@@ -6,12 +6,12 @@ import { sekolah } from "@/data/sekolah";
 
 const slides = [
   {
-    gambar: "/hero1.jpg",
+    gambar: "/hero1.png",
     judul: "Tempat Terbaik Untuk Menuntut Ilmu",
     teks: "Jangan lewatkan kesempatan mendapatkan pendidikan berkualitas dan berakhlak mulia di Madrasah Aliyah Negeri 1 Wonosobo. Jadilah bagian dari komunitas peserta didik yang berprestasi dan mulailah perjalananmu menuju masa depan yang sukses!",
   },
   {
-    gambar: "/hero2.jpg",
+    gambar: "/hero2.png",
     judul: "Kelas Unggulan & Asrama MAN 1 Wonosobo",
     teks: "Raih beasiswa prestasi melalui Kelas Unggulan dan kembangkan karakter bersama pembinaan ibadah dan belajar terjadwal di asrama madrasah. Mulia dalam restu wali.",
   },

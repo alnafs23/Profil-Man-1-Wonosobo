@@ -1,16 +1,19 @@
+"use client";
+
 import Link from "next/link";
-import { sekolah } from "@/data/sekolah";
+import { useSekolah } from "@/lib/store";
 import { tautanInternal, tautanEksternal } from "@/data/links";
 import { FacebookIcon, YoutubeIcon, InstagramIcon, TiktokIcon } from "@/components/SocialIcons";
 
-const sosial = [
-  { nama: "Facebook", href: sekolah.facebook, Icon: FacebookIcon },
-  { nama: "YouTube", href: sekolah.youtube, Icon: YoutubeIcon },
-  { nama: "Instagram", href: sekolah.instagram, Icon: InstagramIcon },
-  { nama: "TikTok", href: sekolah.tiktok, Icon: TiktokIcon },
-];
-
 export default function Footer() {
+  const sekolah = useSekolah();
+  const sosial = [
+    { nama: "Facebook", href: sekolah.facebook, Icon: FacebookIcon },
+    { nama: "YouTube", href: sekolah.youtube, Icon: YoutubeIcon },
+    { nama: "Instagram", href: sekolah.instagram, Icon: InstagramIcon },
+    { nama: "TikTok", href: sekolah.tiktok, Icon: TiktokIcon },
+  ];
+
   return (
     <footer className="mt-0 text-white">
       <div className="bg-gradient-to-br from-emerald-700 via-emerald-800 to-teal-900">
@@ -66,7 +69,7 @@ export default function Footer() {
       <div className="bg-stone-800">
         <div className="max-w-6xl mx-auto px-4 py-6 flex flex-col sm:flex-row justify-between gap-2 text-sm font-semibold">
           <p>Copyright © {sekolah.tahun} {sekolah.namaLengkap}. All rights reserved.</p>
-          <p>Powered by {sekolah.nama.toUpperCase()}</p>
+          <p>Powered by {sekolah.nama.toUpperCase()} · <Link href="/admin" className="hover:text-amber-300">Admin</Link></p>
         </div>
       </div>
     </footer>

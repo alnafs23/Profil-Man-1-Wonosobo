@@ -7,7 +7,7 @@ export default function VisiMisi() {
     <InfoPage
       judul="Visi, Misi, dan Tujuan MAN 1 Wonosobo"
       deskripsi="Arah, nilai, dan tujuan pendidikan di MAN 1 Wonosobo."
-      gambar="/sekolah.jpg"
+      gambar="/sekolah.png"
       seksi={[
         {
           judul: "Visi",

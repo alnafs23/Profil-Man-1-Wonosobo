@@ -9,7 +9,7 @@ export default function About() {
     <InfoPage
       judul="Tentang MAN 1 Wonosobo"
       deskripsi="Mengenal profil, sejarah, visi, misi, dan alamat madrasah."
-      gambar="/sekolah.jpg"
+      gambar="/sekolah.png"
       seksi={[
         {
           judul: "Profil Sekolah",

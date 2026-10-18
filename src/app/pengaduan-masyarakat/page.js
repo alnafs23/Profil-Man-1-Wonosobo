@@ -1,5 +1,6 @@
 import Link from "next/link";
 import InfoPage from "@/components/InfoPage";
+import FormPengaduan from "@/components/FormPengaduan";
 
 export const metadata = { title: "Pengaduan Masyarakat | MAN 1 Wonosobo" };
 
@@ -21,6 +22,7 @@ export default function PengaduanMasyarakat() {
           Kontak Madrasah
         </Link>
       </div>
+      <FormPengaduan />
     </InfoPage>
   );
 }

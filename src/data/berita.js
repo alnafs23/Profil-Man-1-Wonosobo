@@ -4,7 +4,7 @@ export const berita = [
     judul:
       "Tingkatkan Kesiapan Murid, MAN 1 Wonosobo Gelar Gladi Bersih Resmi dan Try Out TKA Bersama Genza",
     tanggal: "5 Oktober 2026",
-    gambar: "/berita1.jpg",
+    gambar: "/berita1.png",
     ringkasan:
       "MAN 1 Wonosobo menggelar Gladi Bersih dan Try Out Tes Kemampuan Akademik (TKA) bagi seluruh murid kelas XII sebagai bentuk persiapan menghadapi ujian nasional berbasis komputer.",
     isi: [
@@ -20,7 +20,7 @@ export const berita = [
     id: "aksi-nyata-kepedulian-2026",
     judul: "Aksi Nyata Kepedulian MAN 1 Wonosobo",
     tanggal: "22 September 2026",
-    gambar: "/berita2.jpg",
+    gambar: "/berita2.png",
     ringkasan:
       "Sebagai wujud kepedulian sosial, keluarga besar MAN 1 Wonosobo menyalurkan bantuan bagi murid dan warga yang terdampak bencana kebakaran di Desa Tieng, Kecamatan Kejajar, Kabupaten Wonosobo.",
     isi: [
@@ -36,7 +36,7 @@ export const berita = [
     judul:
       "Selamat & Sukses! Penyerahan Piala Olimpiade Madrasah Indonesia (OMI) 2026",
     tanggal: "21 September 2026",
-    gambar: "/berita3.jpg",
+    gambar: "/berita3.png",
     ringkasan:
       "MAN 1 Wonosobo meraih prestasi membanggakan dalam penyerahan piala Olimpiade Madrasah Indonesia (OMI) tingkat Kabupaten Wonosobo dan bersiap melangkah ke tingkat Provinsi Jawa Tengah.",
     isi: [
@@ -51,7 +51,7 @@ export const berita = [
     id: "momen-kebanggaan-penyerahan-piala-2026",
     judul: "Momen Kebanggaan: Penyerahan Piala",
     tanggal: "1 Oktober 2026",
-    gambar: "/berita4.jpg",
+    gambar: "/berita4.png",
     ringkasan:
       "Upacara Hari Kesaktian Pancasila 2026 di MAN 1 Wonosobo semakin berkesan dengan prosesi penyerahan piala kejuaraan dari murid berprestasi kepada pihak madrasah.",
     isi: [
@@ -67,7 +67,7 @@ export const berita = [
     id: "pelantikan-osis-2026",
     judul: "Langkah Baru, Amanah Baru!",
     tanggal: "10 September 2026",
-    gambar: "/berita5.jpg",
+    gambar: "/berita5.png",
     ringkasan:
       "Resmi dilantik! Pengurus OSIS MAN 1 Wonosobo Masa Bakti 2026/2027 siap mengemban tanggung jawab dan membawa perubahan positif bagi almamater tercinta.",
     isi: [
@@ -82,7 +82,7 @@ export const berita = [
     id: "pemeriksaan-kesehatan-gizi-2026",
     judul: "Pemeriksaan Kesehatan dan Konsultasi Gizi",
     tanggal: " 24 Agustus 2026",
-    gambar: "/berita6.jpg",
+    gambar: "/berita6.png",
     ringkasan:
       "Tim medis Dinas Kesehatan Kabupaten Wonosobo melaksanakan pemeriksaan kesehatan dan konsultasi gizi bagi murid-murid Kelas XI MAN 1 Wonosobo.",
     isi: [
@@ -97,7 +97,7 @@ export const berita = [
     id: "maulid-nabi-2026",
     judul: "Peringatan Maulid Nabi Muhammad SAW 1448 H / 2026 M",
     tanggal: "22 Agustus 2026",
-    gambar: "/berita7.jpg",
+    gambar: "/berita7.png",
     ringkasan:
       "MAN 1 Wonosobo menggelar peringatan Maulid Nabi Muhammad SAW 1448 H / 2026 M dengan tema 'Bersatu dalam Kebinekaan, Berteladan pada Rasulullah: Mewujudkan Madrasah Unggul dan Berprestasi'.",
     isi: [
@@ -112,7 +112,7 @@ export const berita = [
     id: "rapat-pleno-komite-2026",
     judul: "Transparansi dan Sinergi demi Kemajuan Madrasah",
     tanggal: "4 Agustus 2026",
-    gambar: "/berita8.jpg",
+    gambar: "/berita8.png",
     ringkasan:
       "MAN 1 Wonosobo melaksanakan kegiatan Rapat Pleno Komite Madrasah dalam rangka laporan pertanggungjawaban dan sosialisasi program madrasah tahun ajaran 2026/2027.",
     isi: [

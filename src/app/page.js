@@ -1,18 +1,12 @@
 import Link from "next/link";
 import HeroSlider from "@/components/HeroSlider";
 import SectionTitle from "@/components/SectionTitle";
-import BeritaCard from "@/components/BeritaCard";
-import GalleryGrid from "@/components/GalleryGrid";
 import FeatureSection from "@/components/FeatureSection";
 import ParallaxSection from "@/components/ParallaxSection";
 import TiktokVideos from "@/components/TiktokVideos";
 import InstagramFeed from "@/components/InstagramFeed";
-import { berita } from "@/data/berita";
-import { galeri } from "@/data/galeri";
 import { videos } from "@/data/video";
-import { ekstrakurikuler } from "@/data/ekstrakurikuler";
-import { guru } from "@/data/guru";
-import EkskulCard from "@/components/EkskulCard";
+import { BeritaGrid, EkskulGrid, GaleriLive, GuruCount } from "@/components/Live";
 
 const jalurSpmb = [
   {
@@ -30,8 +24,6 @@ const jalurSpmb = [
 ];
 
 export default function Home() {
-  const terbaru = berita.slice(0, 3);
-
   return (
     <>
       <HeroSlider />
@@ -76,7 +68,7 @@ export default function Home() {
           "Pembinaan prestasi akademik dan non-akademik",
           "Lingkungan madrasah yang bersih dan hijau",
         ]}
-        gambar="/sekolah.jpg"
+        gambar="/sekolah.png"
         href="/about"
         tombol="Tentang MAN 1 Wonosobo"
       />
@@ -124,7 +116,7 @@ export default function Home() {
           "Pembinaan olimpiade dan lomba",
           "Pendampingan persiapan perguruan tinggi",
         ]}
-        gambar="/galeri7.jpg"
+        gambar="/galeri7.png"
         href="/kelas-unggulan"
       />
 
@@ -148,11 +140,7 @@ export default function Home() {
           judul="Ekstrakurikuler"
           sub="Kembangkan minat dan bakat bersama kegiatan madrasah."
         />
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {ekstrakurikuler.slice(0, 4).map((e) => (
-            <EkskulCard key={e.nama} {...e} />
-          ))}
-        </div>
+        <EkskulGrid limit={4} />
         <div className="text-center mt-8">
           <Link
             href="/ekstrakurikuler"
@@ -163,7 +151,7 @@ export default function Home() {
         </div>
       </section>
 
-      <ParallaxSection image="/galeri1.jpg" className="py-20 text-white">
+      <ParallaxSection image="/galeri1.png" className="py-20 text-white">
         <div className="max-w-4xl mx-auto px-4 text-center">
           <div className="mx-auto mb-5 h-24 w-24 rounded-full bg-amber-400 text-emerald-950 flex items-center justify-center text-6xl font-extrabold border-4 border-white shadow-lg">
             A
@@ -193,7 +181,7 @@ export default function Home() {
             GURU &amp; TENAGA KEPENDIDIKAN
           </p>
           <h2 className="text-3xl font-extrabold text-emerald-800 mb-3">
-            {guru.length} Pendidik dan Tenaga Kependidikan
+            <GuruCount /> Pendidik dan Tenaga Kependidikan
           </h2>
           <p className="text-gray-700 mb-6">
             Dibimbing oleh guru dan tenaga kependidikan yang berkompeten dan
@@ -221,11 +209,7 @@ export default function Home() {
           judul="Berita Terbaru"
           sub="Kabar terbaru kegiatan dan prestasi madrasah."
         />
-        <div className="grid md:grid-cols-3 gap-6">
-          {terbaru.map((b) => (
-            <BeritaCard key={b.id} berita={b} />
-          ))}
-        </div>
+        <BeritaGrid limit={3} />
         <div className="text-center mt-8">
           <Link
             href="/berita"
@@ -245,7 +229,7 @@ export default function Home() {
           judul="Galeri"
           sub="Dokumentasi kegiatan dan fasilitas madrasah."
         />
-        <GalleryGrid items={galeri.slice(0, 4)} />
+        <GaleriLive limit={4} />
         <div className="text-center mt-6">
           <Link
             href="/galeri"

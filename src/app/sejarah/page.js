@@ -7,7 +7,7 @@ export default function Sejarah() {
     <InfoPage
       judul="Sejarah MAN 1 Wonosobo"
       deskripsi="Perjalanan madrasah dari masa ke masa."
-      gambar="/sekolah.jpg"
+      gambar="/sekolah.png"
       seksi={[
         {
           judul: "Awal Berdiri",

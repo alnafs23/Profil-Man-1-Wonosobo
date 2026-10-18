@@ -7,7 +7,7 @@ export default function KelasUnggulan() {
     <InfoPage
       judul="Kelas Unggulan (Beasiswa Prestasi)"
       deskripsi="Kelas pembinaan prestasi dengan dukungan beasiswa."
-      gambar="/galeri7.jpg"
+      gambar="/galeri7.png"
       seksi={[
         {
           judul: "Tentang Kelas Unggulan",

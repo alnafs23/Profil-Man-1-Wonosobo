@@ -25,8 +25,8 @@ export default function SaranaPrasarana() {
     >
       <GalleryGrid
         items={[
-          { src: "/galeri1.jpg", judul: "Gedung Utama" },
-          { src: "/galeri3.jpg", judul: "Masjid" },
+          { src: "/galeri1.png", judul: "Gedung Utama" },
+          { src: "/galeri3.png", judul: "Masjid" },
           { src: "/galeri8.png", judul: "Perpustakaan" },
         ]}
       />

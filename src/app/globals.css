@@ -2,3 +2,57 @@
 
 html { scroll-behavior: smooth; }
 body { font-family: ui-sans-serif, system-ui, "Segoe UI", Roboto, Arial, sans-serif; }
+
+/* ===================== Panel Admin (tema terang / gelap) ===================== */
+@theme inline {
+  --color-ad-page: var(--a-page);
+  --color-ad-card: var(--a-card);
+  --color-ad-line: var(--a-line);
+  --color-ad-fg: var(--a-fg);
+  --color-ad-muted: var(--a-muted);
+  --color-ad-hover: var(--a-hover);
+  --color-ad-input: var(--a-input);
+  --color-ad-primary: var(--a-primary);
+  --color-ad-side: var(--a-side);
+}
+@theme static {
+  --color-ad-success: #2eb85c;
+  --color-ad-danger: #e55353;
+  --color-ad-warning: #d9a514;
+  --color-ad-violet: #6f63e8;
+  --color-ad-pink: #d9456f;
+  --color-ad-amber: #e0b41b;
+  --color-ad-sky: #4799eb;
+}
+
+.admin-root {
+  --a-page: #f1f3f7;
+  --a-card: #ffffff;
+  --a-line: #dde2ea;
+  --a-fg: #1f2738;
+  --a-muted: #66708a;
+  --a-hover: #eef1f6;
+  --a-input: #ffffff;
+  --a-primary: #2f7fe8;
+  --a-bar2: #bfc7d6;
+  --a-side: #212631;
+  color-scheme: light;
+}
+.admin-root[data-theme="dark"] {
+  --a-page: #212631;
+  --a-card: #262c3a;
+  --a-line: #3a4152;
+  --a-fg: #e7e9ef;
+  --a-muted: #98a1b6;
+  --a-hover: #2d3445;
+  --a-input: #212631;
+  --a-primary: #4b9bff;
+  --a-bar2: #e7e9ef;
+  --a-side: #1d222c;
+  color-scheme: dark;
+}
+.admin-root { font-size: 13px; background: var(--a-page); color: var(--a-fg); }
+.admin-root ::selection { background: color-mix(in srgb, var(--a-primary) 35%, transparent); }
+@media (prefers-reduced-motion: reduce) {
+  .admin-root * { transition: none !important; animation: none !important; }
+}

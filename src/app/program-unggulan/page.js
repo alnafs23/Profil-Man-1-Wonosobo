@@ -11,7 +11,7 @@ export default function ProgramUnggulan() {
     >
       <div className="grid md:grid-cols-2 gap-6">
         <ProgramCard
-          gambar="/galeri7.jpg"
+          gambar="/galeri7.png"
           judul="Kelas Unggulan"
           deskripsi="Pembinaan prestasi akademik dengan beasiswa prestasi."
           href="/kelas-unggulan"
@@ -25,7 +25,7 @@ export default function ProgramUnggulan() {
           label="Selengkapnya"
         />
         <ProgramCard
-          gambar="/galeri6.jpg"
+          gambar="/galeri6.png"
           judul="Ekstrakurikuler"
           deskripsi="Pramuka, PMR, Paskibra, Hadroh, Basket, Futsal, dan Multimedia Club."
         />

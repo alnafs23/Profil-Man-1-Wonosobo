@@ -340,7 +340,7 @@ export function sha256(teks) {
 
 export const ADMIN_USER = "admin";
 const ADMIN_HASH =
-  "9710369d05195bae597d958c9cece2982b44e4e4b233a5a59a77eb70eaa9a9cb";
+  "35c94c027eea94b9a7ae9f13519680f34403a1f2824c6e2d03a2b0359d3c97f4";
 
 const SALT = "man1wonosobo::";
 export const hashPassword = (p) => sha256(SALT + p);

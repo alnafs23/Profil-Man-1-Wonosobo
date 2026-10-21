@@ -20,6 +20,7 @@ export const menu = [
     href: "/program-unggulan",
     children: [
       { label: "Program Unggulan", href: "/program-unggulan" },
+      { label: "Jurusan (IPA, IPS, Keagamaan)", href: "/jurusan" },
       { label: "Kelas Unggulan (Beasiswa Prestasi)", href: "/kelas-unggulan" },
       { label: "Asrama MAN 1 Wonosobo", href: "/asrama" },
       { label: "Ekstrakurikuler", href: "/ekstrakurikuler" },

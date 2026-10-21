@@ -57,8 +57,6 @@ export const dayKey = (d) =>
   `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 export const todayISO = () => dayKey(new Date());
 
-/* tanggal */
-
 export function parseTanggalID(s) {
   const m = String(s || "")
     .trim()
@@ -107,8 +105,6 @@ export function relWaktu(iso) {
 export const sortBerita = (list) =>
   [...list].sort((a, b) => String(b.tgl).localeCompare(String(a.tgl)));
 
-/* data awal */
-
 const seeds = {
   berita: () =>
     seedBerita.map((b) => ({
@@ -139,6 +135,7 @@ const seeds = {
   pengaduan: () => [],
   sekolah: () => ({ ...seedSekolah }),
   stats: () => ({ sample: false, daily: {}, pages: {} }),
+  session: () => null,
 };
 
 const seedCache = {};
@@ -146,8 +143,6 @@ export function seed(name) {
   if (!(name in seedCache)) seedCache[name] = seeds[name]();
   return seedCache[name];
 }
-
-/* inti store */
 
 const cache = new Map();
 
@@ -228,6 +223,7 @@ export function useCollection(name) {
 }
 
 export const useSekolah = () => useCollection("sekolah");
+
 export function useMounted() {
   return useSyncExternalStore(
     () => () => {},
@@ -277,7 +273,132 @@ export function removeItem(name, id) {
   );
 }
 
-/*tema */
+const frac = (x) => Math.floor((x - Math.floor(x)) * 4294967296);
+const K256 = [];
+const H256 = [];
+(() => {
+  let n = 2;
+  let c = 0;
+  while (c < 64) {
+    let prima = true;
+    for (let d = 2; d * d <= n; d++)
+      if (n % d === 0) {
+        prima = false;
+        break;
+      }
+    if (prima) {
+      if (c < 8) H256.push(frac(Math.sqrt(n)));
+      K256.push(frac(Math.cbrt(n)));
+      c++;
+    }
+    n++;
+  }
+})();
+
+export function sha256(teks) {
+  const data = new TextEncoder().encode(teks);
+  const len = data.length;
+  const total = ((len + 9 + 63) >> 6) << 6;
+  const buf = new Uint8Array(total);
+  buf.set(data);
+  buf[len] = 0x80;
+  const view = new DataView(buf.buffer);
+  view.setUint32(total - 8, Math.floor((len * 8) / 4294967296));
+  view.setUint32(total - 4, (len * 8) >>> 0);
+  const h = H256.slice();
+  const w = new Array(64);
+  const rotr = (x, n) => (x >>> n) | (x << (32 - n));
+  for (let o = 0; o < total; o += 64) {
+    for (let i = 0; i < 16; i++) w[i] = view.getUint32(o + i * 4);
+    for (let i = 16; i < 64; i++) {
+      const s0 = rotr(w[i - 15], 7) ^ rotr(w[i - 15], 18) ^ (w[i - 15] >>> 3);
+      const s1 = rotr(w[i - 2], 17) ^ rotr(w[i - 2], 19) ^ (w[i - 2] >>> 10);
+      w[i] = (w[i - 16] + s0 + w[i - 7] + s1) >>> 0;
+    }
+    let [a, b, c, d, e, f, g, hh] = h;
+    for (let i = 0; i < 64; i++) {
+      const S1 = rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25);
+      const ch = (e & f) ^ (~e & g);
+      const t1 = (hh + S1 + ch + K256[i] + w[i]) >>> 0;
+      const S0 = rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22);
+      const maj = (a & b) ^ (a & c) ^ (b & c);
+      const t2 = (S0 + maj) >>> 0;
+      hh = g;
+      g = f;
+      f = e;
+      e = (d + t1) >>> 0;
+      d = c;
+      c = b;
+      b = a;
+      a = (t1 + t2) >>> 0;
+    }
+    const v = [a, b, c, d, e, f, g, hh];
+    for (let i = 0; i < 8; i++) h[i] = (h[i] + v[i]) >>> 0;
+  }
+  return h.map((x) => x.toString(16).padStart(8, "0")).join("");
+}
+
+export const ADMIN_USER = "admin";
+const ADMIN_HASH =
+  "9710369d05195bae597d958c9cece2982b44e4e4b233a5a59a77eb70eaa9a9cb";
+
+const SALT = "man1wonosobo::";
+export const hashPassword = (p) => sha256(SALT + p);
+const DEFAULT_ADMIN = {
+  username: ADMIN_USER,
+  nama: "Administrator",
+  hash: ADMIN_HASH,
+};
+const SESI_JAM = 8;
+
+export function useSession() {
+  return useSyncExternalStore(
+    subscribe,
+    () => {
+      const s = read("session");
+      return s && s.exp > Date.now() ? s : null;
+    },
+    () => null,
+  );
+}
+
+let gagal = 0;
+let kunciSampai = 0;
+
+export function login(username, password) {
+  if (Date.now() < kunciSampai) {
+    const detik = Math.ceil((kunciSampai - Date.now()) / 1000);
+    return {
+      ok: false,
+      error: `Terlalu banyak percobaan. Coba lagi dalam ${detik} detik.`,
+    };
+  }
+  const a = DEFAULT_ADMIN;
+  const cocok =
+    String(username).trim().toLowerCase() ===
+      String(a.username).toLowerCase() &&
+    hashPassword(String(password)) === a.hash;
+  if (!cocok) {
+    gagal += 1;
+    if (gagal >= 5) {
+      gagal = 0;
+      kunciSampai = Date.now() + 30000;
+    }
+    return { ok: false, error: "Nama pengguna atau kata sandi salah." };
+  }
+  gagal = 0;
+  write("auth", a);
+  const r = write("session", {
+    username: a.username,
+    nama: a.nama,
+    exp: Date.now() + SESI_JAM * 36e5,
+  });
+  return r.ok ? { ok: true } : { ok: false, error: r.error };
+}
+
+export function logout() {
+  removeKey("session");
+}
 
 export function useTheme() {
   const t = useSyncExternalStore(
@@ -299,8 +420,6 @@ export function useTheme() {
   };
   return [t, set];
 }
-
-/* statistik */
 
 export function trackView(path) {
   if (typeof window === "undefined" || path.startsWith("/admin")) return;
@@ -385,8 +504,6 @@ export function labelHalaman(path, berita = []) {
   }
   return path;
 }
-
-/* cadangan */
 
 const KOLEKSI_KONTEN = ["berita", "galeri", "ekskul", "guru", "sekolah"];
 

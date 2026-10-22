@@ -12,21 +12,24 @@ export default function EkskulAdmin() {
 
   const buka = (e) => { setErr({}); setForm(e ? { ...e } : { nama: "", desk: "", gambar: "" }); };
 
-  const simpan = () => {
+  const simpan = async () => {
     const e = {};
     if (!form.nama.trim()) e.nama = "Nama kegiatan wajib diisi.";
     if (!form.desk.trim()) e.desk = "Deskripsi singkat wajib diisi.";
     setErr(e);
     if (Object.keys(e).length) return;
-    const r = upsert("ekskul", { id: form.id || uid("ekskul"), nama: form.nama.trim(), desk: form.desk.trim(), gambar: form.gambar }, { append: true });
+    const urutan = form.id
+      ? (list.find((x) => x.id === form.id)?.urutan ?? list.length + 1)
+      : list.length + 1;
+    const r = await upsert("ekskul", { id: form.id || uid("ekskul"), nama: form.nama.trim(), desk: form.desk.trim(), gambar: form.gambar, urutan });
     if (!r.ok) return toast(r.error, "error");
     toast(form.id ? "Ekstrakurikuler diperbarui." : "Ekstrakurikuler ditambahkan.");
     setForm(null);
   };
 
   const hapus = async (e) => {
-    if (!(await confirm({ title: "Hapus ekstrakurikuler?", message: `“${e.nama}” akan dihapus dari website.`, confirmLabel: "Hapus", tone: "danger" }))) return;
-    const r = removeItem("ekskul", e.id);
+    if (!(await confirm({ title: "Hapus ekstrakurikuler?", message: `"${e.nama}" akan dihapus dari website.`, confirmLabel: "Hapus", tone: "danger" }))) return;
+    const r = await removeItem("ekskul", e.id);
     r.ok ? toast("Ekstrakurikuler dihapus.") : toast(r.error, "error");
   };
 

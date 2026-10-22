@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Icon from "@/components/admin/Icon";
 import { Badge, Btn, Card, Empty, Field, ImagePicker, IconBtn, Input, Modal, PageHead, Pager, SearchInput, Select, Textarea, td, th, useUI } from "@/components/admin/ui";
-import { fmt, formatTanggalID, read, removeItem, sortBerita, todayISO, uniqueSlug, upsert, useCollection } from "@/lib/store";
+import { fmt, formatTanggalID, removeItem, sortBerita, todayISO, uniqueSlug, upsert, useCollection } from "@/lib/store";
 
 const PER = 8;
 const KOSONG = { judul: "", tgl: "", status: "terbit", gambar: "", ringkasan: "", isiText: "" };
@@ -39,7 +39,7 @@ export default function BeritaAdmin() {
   const tampil = hasil.slice((page - 1) * PER, page * PER);
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target ? e.target.value : e }));
 
-  const simpan = () => {
+  const simpan = async () => {
     const e = {};
     if (!form.judul.trim()) e.judul = "Judul wajib diisi.";
     if (!form.tgl) e.tgl = "Tanggal wajib diisi.";
@@ -50,7 +50,7 @@ export default function BeritaAdmin() {
 
     const ringkasan = form.ringkasan.trim() || (isi[0].length > 180 ? isi[0].slice(0, 177) + "…" : isi[0]);
     const item = {
-      id: form.id || uniqueSlug(form.judul, read("berita").map((x) => x.id)),
+      id: form.id || uniqueSlug(form.judul, list.map((x) => x.id)),
       judul: form.judul.trim(),
       tgl: form.tgl,
       status: form.status,
@@ -60,21 +60,21 @@ export default function BeritaAdmin() {
       penulis: form.penulis || "Admin",
       diubah: new Date().toISOString(),
     };
-    const r = upsert("berita", item);
+    const r = await upsert("berita", item);
     if (!r.ok) return toast(r.error, "error");
     toast(form.id ? "Berita diperbarui." : "Berita ditambahkan.");
     setForm(null);
   };
 
   const hapus = async (b) => {
-    const ok = await confirm({ title: "Hapus berita?", message: `“${b.judul}” akan dihapus dari website dan tidak bisa dikembalikan.`, confirmLabel: "Hapus", tone: "danger" });
+    const ok = await confirm({ title: "Hapus berita?", message: `"${b.judul}" akan dihapus dari website dan tidak bisa dikembalikan.`, confirmLabel: "Hapus", tone: "danger" });
     if (!ok) return;
-    const r = removeItem("berita", b.id);
+    const r = await removeItem("berita", b.id);
     r.ok ? toast("Berita dihapus.") : toast(r.error, "error");
   };
 
-  const ubahStatus = (b) => {
-    const r = upsert("berita", { ...b, status: b.status === "draf" ? "terbit" : "draf", diubah: new Date().toISOString() });
+  const ubahStatus = async (b) => {
+    const r = await upsert("berita", { ...b, status: b.status === "draf" ? "terbit" : "draf", diubah: new Date().toISOString() });
     r.ok ? toast(b.status === "draf" ? "Berita diterbitkan." : "Berita dijadikan draf.") : toast(r.error, "error");
   };
 

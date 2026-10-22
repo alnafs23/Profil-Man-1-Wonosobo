@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import Icon from "./Icon";
-import { fileToDataUrl } from "@/lib/image";
+import { fileToStorageUrl } from "@/lib/image";
 
 /* ---------------------------- toast + konfirmasi --------------------------- */
 
@@ -187,7 +187,7 @@ export function ImagePicker({ label = "Gambar", value, onChange, hint }) {
     if (!f) return;
     setBusy(true);
     try {
-      onChange(await fileToDataUrl(f));
+      onChange(await fileToStorageUrl(f));
     } catch (err) {
       toast(err.message, "error");
     } finally {
@@ -206,7 +206,7 @@ export function ImagePicker({ label = "Gambar", value, onChange, hint }) {
           <input ref={ref} type="file" accept="image/*" className="sr-only" onChange={pilih} tabIndex={-1} />
           <Btn size="sm" icon="upload" onClick={() => ref.current?.click()} disabled={busy}>{busy ? "Memproses…" : value ? "Ganti gambar" : "Unggah gambar"}</Btn>
           {value && <Btn size="sm" variant="ghost" icon="trash" onClick={() => onChange("")}>Hapus gambar</Btn>}
-          <p className="text-[11px] leading-snug text-ad-muted">{hint || "JPG/PNG/WebP. Otomatis dikecilkan agar muat di penyimpanan browser."}</p>
+          <p className="text-[11px] leading-snug text-ad-muted">{hint || "JPG/PNG/WebP. Otomatis dikecilkan lalu diunggah ke server."}</p>
         </div>
       </div>
     </div>

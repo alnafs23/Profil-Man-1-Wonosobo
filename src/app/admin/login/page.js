@@ -15,10 +15,13 @@ export default function LoginPage() {
   const [p, setP] = useState("");
   const [lihat, setLihat] = useState(false);
   const [err, setErr] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const kirim = (e) => {
+  const kirim = async (e) => {
     e.preventDefault();
-    const r = login(u, p);
+    setLoading(true);
+    const r = await login(u, p);
+    setLoading(false);
     if (!r.ok) return setErr(r.error);
     router.replace("/admin");
   };
@@ -171,9 +174,10 @@ export default function LoginPage() {
             </label>
             <button
               type="submit"
-              className="w-full rounded-lg bg-amber-400 py-2.5 text-sm font-bold text-emerald-950 shadow-lg shadow-black/20 transition hover:bg-amber-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+              disabled={loading}
+              className="w-full rounded-lg bg-amber-400 py-2.5 text-sm font-bold text-emerald-950 shadow-lg shadow-black/20 transition hover:bg-amber-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 disabled:opacity-60"
             >
-              Masuk
+              {loading ? "Memproses…" : "Masuk"}
             </button>
           </form>
 

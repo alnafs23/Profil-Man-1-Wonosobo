@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { read, uid, write } from "@/lib/store";
+import { uid, upsert } from "@/lib/store";
 
 const KATEGORI = ["Layanan administrasi", "Pendidik & tenaga kependidikan", "Sarana & prasarana", "Penerimaan murid baru", "Lainnya"];
 const awal = { nama: "", kontak: "", kategori: KATEGORI[0], pesan: "" };
@@ -11,18 +11,26 @@ export default function FormPengaduan() {
   const [f, setF] = useState(awal);
   const [err, setErr] = useState("");
   const [ok, setOk] = useState(false);
+  const [loading, setLoading] = useState(false);
   const set = (k) => (e) => { setF({ ...f, [k]: e.target.value }); setErr(""); };
 
-  const kirim = (e) => {
+  const kirim = async (e) => {
     e.preventDefault();
     if (!f.nama.trim() || !f.kontak.trim() || f.pesan.trim().length < 10) {
       return setErr("Lengkapi nama, kontak, dan uraian pengaduan (minimal 10 karakter).");
     }
-    const r = write("pengaduan", [
-      { id: uid("adu"), ...f, nama: f.nama.trim(), kontak: f.kontak.trim(), pesan: f.pesan.trim(), status: "baru", waktu: new Date().toISOString() },
-      ...read("pengaduan"),
-    ]);
-    if (!r.ok) return setErr(r.error);
+    setLoading(true);
+    const r = await upsert("pengaduan", {
+      id: uid("adu"),
+      nama: f.nama.trim(),
+      kontak: f.kontak.trim(),
+      kategori: f.kategori,
+      pesan: f.pesan.trim(),
+      status: "baru",
+      waktu: new Date().toISOString(),
+    });
+    setLoading(false);
+    if (!r.ok) return setErr(r.error || "Gagal mengirim pengaduan. Coba beberapa saat lagi.");
     setF(awal);
     setOk(true);
   };
@@ -49,7 +57,7 @@ export default function FormPengaduan() {
         <select className={cls} value={f.kategori} onChange={set("kategori")}>{KATEGORI.map((k) => <option key={k}>{k}</option>)}</select>
       </label>
       <label className="block"><span className="block text-sm font-semibold text-gray-700 mb-1">Uraian pengaduan</span><textarea rows={5} className={cls} value={f.pesan} onChange={set("pesan")} /></label>
-      <button type="submit" className="bg-emerald-600 text-white font-semibold px-6 py-3 rounded-lg hover:bg-emerald-700">Kirim pengaduan</button>
+      <button type="submit" disabled={loading} className="bg-emerald-600 text-white font-semibold px-6 py-3 rounded-lg hover:bg-emerald-700 disabled:opacity-60">{loading ? "Mengirim…" : "Kirim pengaduan"}</button>
     </form>
   );
 }

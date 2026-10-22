@@ -17,13 +17,13 @@ export default function PengaduanAdmin() {
   const hitung = (s) => list.filter((p) => p.status === s).length;
   const cur = aktif && list.find((p) => p.id === aktif);
 
-  const ubah = (p, status) => {
-    const r = upsert("pengaduan", { ...p, status });
+  const ubah = async (p, status) => {
+    const r = await upsert("pengaduan", { ...p, status });
     r.ok ? toast(`Ditandai ${STATUS[status][0].toLowerCase()}.`) : toast(r.error, "error");
   };
   const hapus = async (p) => {
     if (!(await confirm({ title: "Hapus pengaduan?", message: `Pengaduan dari ${p.nama} akan dihapus permanen.`, confirmLabel: "Hapus", tone: "danger" }))) return;
-    removeItem("pengaduan", p.id);
+    await removeItem("pengaduan", p.id);
     setAktif(null);
     toast("Pengaduan dihapus.");
   };

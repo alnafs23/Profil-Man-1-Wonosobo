@@ -1,55 +1,23 @@
 import { useSyncExternalStore } from "react";
+import { supabase } from "@/lib/supabase";
 import { berita as seedBerita } from "@/data/berita";
 import { galeri as seedGaleri } from "@/data/galeri";
 import { ekstrakurikuler as seedEkskul } from "@/data/ekstrakurikuler";
 import { guru as seedGuru } from "@/data/guru";
 import { sekolah as seedSekolah } from "@/data/sekolah";
 
-const PREFIX = "man1:";
-const listeners = new Set();
-let bound = false;
+/* ─── Konstanta & helper tanggal ─────────────────────────────────────────── */
 
 export const BULAN = [
-  "Januari",
-  "Februari",
-  "Maret",
-  "April",
-  "Mei",
-  "Juni",
-  "Juli",
-  "Agustus",
-  "September",
-  "Oktober",
-  "November",
-  "Desember",
+  "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+  "Juli", "Agustus", "September", "Oktober", "November", "Desember",
 ];
-export const HARI = [
-  "Minggu",
-  "Senin",
-  "Selasa",
-  "Rabu",
-  "Kamis",
-  "Jumat",
-  "Sabtu",
-];
+export const HARI = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
 export const GOLONGAN = [
-  "IV/e",
-  "IV/d",
-  "IV/c",
-  "IV/b",
-  "IV/a",
-  "III/d",
-  "III/c",
-  "III/b",
-  "III/a",
-  "II/d",
-  "II/c",
-  "II/b",
-  "II/a",
-  "I/d",
-  "I/c",
-  "I/b",
-  "I/a",
+  "IV/e", "IV/d", "IV/c", "IV/b", "IV/a",
+  "III/d", "III/c", "III/b", "III/a",
+  "II/d", "II/c", "II/b", "II/a",
+  "I/d", "I/c", "I/b", "I/a",
 ];
 
 const pad = (n) => String(n).padStart(2, "0");
@@ -105,6 +73,8 @@ export function relWaktu(iso) {
 export const sortBerita = (list) =>
   [...list].sort((a, b) => String(b.tgl).localeCompare(String(a.tgl)));
 
+/* ─── Seed (data awal sebelum Supabase termuat) ──────────────────────────── */
+
 const seeds = {
   berita: () =>
     seedBerita.map((b) => ({
@@ -122,6 +92,7 @@ const seeds = {
       id: `galeri-${i + 1}`,
       src: g.src,
       judul: g.judul,
+      urutan: i + 1,
     })),
   ekskul: () =>
     seedEkskul.map((e, i) => ({
@@ -129,12 +100,13 @@ const seeds = {
       nama: e.nama,
       gambar: e.gambar,
       desk: e.desk,
+      urutan: i + 1,
     })),
   guru: () =>
-    seedGuru.map((g, i) => ({ id: `guru-${i + 1}`, nama: g.nama, gol: g.gol })),
+    seedGuru.map((g, i) => ({ id: `guru-${i + 1}`, nama: g.nama, gol: g.gol, urutan: i + 1 })),
   pengaduan: () => [],
   sekolah: () => ({ ...seedSekolah }),
-  stats: () => ({ sample: false, daily: {}, pages: {} }),
+  stats: () => ({ daily: {}, pages: {} }),
   session: () => null,
 };
 
@@ -144,28 +116,11 @@ export function seed(name) {
   return seedCache[name];
 }
 
-const cache = new Map();
+/* ─── Store reaktif (in-memory cache + listeners) ────────────────────────── */
 
-export function read(name) {
-  if (typeof window === "undefined") return seed(name);
-  let raw = null;
-  try {
-    raw = window.localStorage.getItem(PREFIX + name);
-  } catch {
-    return seed(name);
-  }
-  if (raw === null) return seed(name);
-  const hit = cache.get(name);
-  if (hit && hit.raw === raw) return hit.value;
-  try {
-    const value = JSON.parse(raw);
-    if (name === "stats" && value && value.sample) return seed(name);
-    cache.set(name, { raw, value });
-    return value;
-  } catch {
-    return seed(name);
-  }
-}
+const memCache = new Map();   // name → data saat ini
+const loadState = new Map();  // name → "idle"|"loading"|"done"
+const listeners = new Set();
 
 function emit() {
   listeners.forEach((l) => l());
@@ -173,51 +128,170 @@ function emit() {
 
 function subscribe(cb) {
   listeners.add(cb);
-  if (!bound && typeof window !== "undefined") {
-    window.addEventListener("storage", emit);
-    bound = true;
-  }
   return () => listeners.delete(cb);
 }
 
-export function write(name, value) {
-  try {
-    window.localStorage.setItem(PREFIX + name, JSON.stringify(value));
-  } catch (e) {
-    const penuh =
-      e &&
-      (e.name === "QuotaExceededError" || e.code === 22 || e.code === 1014);
-    return {
-      ok: false,
-      error: penuh
-        ? "Penyimpanan browser penuh. Hapus beberapa gambar atau gunakan gambar yang lebih kecil."
-        : "Data tidak dapat disimpan di browser ini.",
-    };
-  }
-  emit();
-  return { ok: true };
+/** Baca nilai sinkron dari cache (atau seed jika belum termuat). */
+function readCache(name) {
+  return memCache.has(name) ? memCache.get(name) : seed(name);
 }
 
-export function removeKey(name) {
-  try {
-    window.localStorage.removeItem(PREFIX + name);
-  } catch {}
-  cache.delete(name);
+/** Set cache dan beritahu semua listener. */
+function setCache(name, value) {
+  memCache.set(name, value);
+  loadState.set(name, "done");
   emit();
 }
 
-export function hasKey(name) {
+/* ─── Muat data dari Supabase ────────────────────────────────────────────── */
+
+/** Ambil sesi aktif Supabase (hanya di client). */
+async function getSupabaseSession() {
+  if (!supabase) return null;
   try {
-    return window.localStorage.getItem(PREFIX + name) !== null;
+    const { data } = await supabase.auth.getSession();
+    return data?.session ?? null;
   } catch {
-    return false;
+    return null;
   }
 }
+
+async function loadBerita() {
+  if (!supabase) return;
+  try {
+    const { data, error } = await supabase.from("berita").select("*");
+    if (error) throw error;
+    setCache("berita", data || []);
+  } catch {
+    // Tetap pakai seed jika gagal
+  }
+}
+
+async function loadGaleri() {
+  if (!supabase) return;
+  try {
+    const { data, error } = await supabase
+      .from("galeri")
+      .select("*")
+      .order("urutan", { ascending: true });
+    if (error) throw error;
+    setCache("galeri", data || []);
+  } catch {}
+}
+
+async function loadEkskul() {
+  if (!supabase) return;
+  try {
+    const { data, error } = await supabase
+      .from("ekskul")
+      .select("*")
+      .order("urutan", { ascending: true });
+    if (error) throw error;
+    setCache("ekskul", data || []);
+  } catch {}
+}
+
+async function loadGuru() {
+  if (!supabase) return;
+  try {
+    const { data, error } = await supabase
+      .from("guru")
+      .select("*")
+      .order("urutan", { ascending: true });
+    if (error) throw error;
+    setCache("guru", data || []);
+  } catch {}
+}
+
+async function loadPengaduan() {
+  if (!supabase) return;
+  try {
+    const { data, error } = await supabase
+      .from("pengaduan")
+      .select("*")
+      .order("waktu", { ascending: false });
+    if (error) {
+      // RLS: anon tidak bisa baca → kembalikan array kosong, bukan crash
+      setCache("pengaduan", []);
+      return;
+    }
+    setCache("pengaduan", data || []);
+  } catch {
+    setCache("pengaduan", []);
+  }
+}
+
+async function loadSekolah() {
+  if (!supabase) return;
+  try {
+    const { data, error } = await supabase
+      .from("sekolah")
+      .select("data")
+      .eq("id", 1)
+      .single();
+    if (error) throw error;
+    if (data?.data) setCache("sekolah", data.data);
+  } catch {}
+}
+
+async function loadStats() {
+  if (!supabase) return;
+  try {
+    const [{ data: harian }, { data: halaman }] = await Promise.all([
+      supabase.from("kunjungan_harian").select("tanggal,pengunjung,tayangan"),
+      supabase.from("kunjungan_halaman").select("path,jumlah"),
+    ]);
+    const daily = {};
+    (harian || []).forEach((r) => {
+      daily[r.tanggal] = [r.pengunjung || 0, r.tayangan || 0];
+    });
+    const pages = {};
+    (halaman || []).forEach((r) => {
+      pages[r.path] = r.jumlah || 0;
+    });
+    setCache("stats", { daily, pages });
+  } catch {}
+}
+
+/** Muat satu koleksi (jika belum pernah dimuat). */
+async function ensureLoaded(name) {
+  if (loadState.get(name) === "loading" || loadState.get(name) === "done") return;
+  loadState.set(name, "loading");
+  await reload(name);
+}
+
+/** Paksa muat ulang satu koleksi dari Supabase. */
+async function reload(name) {
+  switch (name) {
+    case "berita":    return loadBerita();
+    case "galeri":    return loadGaleri();
+    case "ekskul":    return loadEkskul();
+    case "guru":      return loadGuru();
+    case "pengaduan": return loadPengaduan();
+    case "sekolah":   return loadSekolah();
+    case "stats":     return loadStats();
+  }
+}
+
+/** Muat ulang semua koleksi konten. */
+async function reloadAll() {
+  await Promise.all([
+    loadBerita(), loadGaleri(), loadEkskul(),
+    loadGuru(), loadPengaduan(), loadSekolah(), loadStats(),
+  ]);
+}
+
+/* ─── useCollection ──────────────────────────────────────────────────────── */
 
 export function useCollection(name) {
   return useSyncExternalStore(
-    subscribe,
-    () => read(name),
+    (cb) => {
+      listeners.add(cb);
+      // Picu muat di background hanya di client
+      if (typeof window !== "undefined") ensureLoaded(name);
+      return () => listeners.delete(cb);
+    },
+    () => readCache(name),
     () => seed(name),
   );
 }
@@ -232,140 +306,51 @@ export function useMounted() {
   );
 }
 
-export const uid = (p = "id") =>
-  `${p}-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+/* ─── useSession ─────────────────────────────────────────────────────────── */
 
-export function slugify(s) {
-  return (
-    String(s || "")
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "")
-      .slice(0, 60) || "berita"
-  );
+let sessionCache = null;
+let sessionLoaded = false;
+let authListenerBound = false;
+
+function bindAuthListener() {
+  if (authListenerBound || !supabase || typeof window === "undefined") return;
+  authListenerBound = true;
+  supabase.auth.onAuthStateChange((_event, session) => {
+    sessionCache = session;
+    sessionLoaded = true;
+    emit();
+  });
+  // Muat sesi awal
+  supabase.auth.getSession().then(({ data }) => {
+    sessionCache = data?.session ?? null;
+    sessionLoaded = true;
+    emit();
+  });
 }
-
-export function uniqueSlug(judul, ids) {
-  const base = slugify(judul);
-  let s = base;
-  let n = 2;
-  while (ids.includes(s)) s = `${base}-${n++}`;
-  return s;
-}
-
-export function upsert(name, item, { append = false } = {}) {
-  const list = read(name);
-  const ada = list.some((x) => x.id === item.id);
-  const next = ada
-    ? list.map((x) => (x.id === item.id ? item : x))
-    : append
-      ? [...list, item]
-      : [item, ...list];
-  return write(name, next);
-}
-
-export function removeItem(name, id) {
-  return write(
-    name,
-    read(name).filter((x) => x.id !== id),
-  );
-}
-
-const frac = (x) => Math.floor((x - Math.floor(x)) * 4294967296);
-const K256 = [];
-const H256 = [];
-(() => {
-  let n = 2;
-  let c = 0;
-  while (c < 64) {
-    let prima = true;
-    for (let d = 2; d * d <= n; d++)
-      if (n % d === 0) {
-        prima = false;
-        break;
-      }
-    if (prima) {
-      if (c < 8) H256.push(frac(Math.sqrt(n)));
-      K256.push(frac(Math.cbrt(n)));
-      c++;
-    }
-    n++;
-  }
-})();
-
-export function sha256(teks) {
-  const data = new TextEncoder().encode(teks);
-  const len = data.length;
-  const total = ((len + 9 + 63) >> 6) << 6;
-  const buf = new Uint8Array(total);
-  buf.set(data);
-  buf[len] = 0x80;
-  const view = new DataView(buf.buffer);
-  view.setUint32(total - 8, Math.floor((len * 8) / 4294967296));
-  view.setUint32(total - 4, (len * 8) >>> 0);
-  const h = H256.slice();
-  const w = new Array(64);
-  const rotr = (x, n) => (x >>> n) | (x << (32 - n));
-  for (let o = 0; o < total; o += 64) {
-    for (let i = 0; i < 16; i++) w[i] = view.getUint32(o + i * 4);
-    for (let i = 16; i < 64; i++) {
-      const s0 = rotr(w[i - 15], 7) ^ rotr(w[i - 15], 18) ^ (w[i - 15] >>> 3);
-      const s1 = rotr(w[i - 2], 17) ^ rotr(w[i - 2], 19) ^ (w[i - 2] >>> 10);
-      w[i] = (w[i - 16] + s0 + w[i - 7] + s1) >>> 0;
-    }
-    let [a, b, c, d, e, f, g, hh] = h;
-    for (let i = 0; i < 64; i++) {
-      const S1 = rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25);
-      const ch = (e & f) ^ (~e & g);
-      const t1 = (hh + S1 + ch + K256[i] + w[i]) >>> 0;
-      const S0 = rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22);
-      const maj = (a & b) ^ (a & c) ^ (b & c);
-      const t2 = (S0 + maj) >>> 0;
-      hh = g;
-      g = f;
-      f = e;
-      e = (d + t1) >>> 0;
-      d = c;
-      c = b;
-      b = a;
-      a = (t1 + t2) >>> 0;
-    }
-    const v = [a, b, c, d, e, f, g, hh];
-    for (let i = 0; i < 8; i++) h[i] = (h[i] + v[i]) >>> 0;
-  }
-  return h.map((x) => x.toString(16).padStart(8, "0")).join("");
-}
-
-export const ADMIN_USER = "admin";
-const ADMIN_HASH =
-  "35c94c027eea94b9a7ae9f13519680f34403a1f2824c6e2d03a2b0359d3c97f4";
-
-const SALT = "man1wonosobo::";
-export const hashPassword = (p) => sha256(SALT + p);
-const DEFAULT_ADMIN = {
-  username: ADMIN_USER,
-  nama: "Administrator",
-  hash: ADMIN_HASH,
-};
-const SESI_JAM = 8;
 
 export function useSession() {
   return useSyncExternalStore(
-    subscribe,
+    (cb) => {
+      listeners.add(cb);
+      if (typeof window !== "undefined") bindAuthListener();
+      return () => listeners.delete(cb);
+    },
     () => {
-      const s = read("session");
-      return s && s.exp > Date.now() ? s : null;
+      if (!sessionLoaded && typeof window !== "undefined") bindAuthListener();
+      return sessionCache;
     },
     () => null,
   );
 }
 
+/* ─── Login / Logout ─────────────────────────────────────────────────────── */
+
+const EMAIL_DOMAIN = "@man1wonosobo.id";
+
 let gagal = 0;
 let kunciSampai = 0;
 
-export function login(username, password) {
+export async function login(username, password) {
   if (Date.now() < kunciSampai) {
     const detik = Math.ceil((kunciSampai - Date.now()) / 1000);
     return {
@@ -373,12 +358,17 @@ export function login(username, password) {
       error: `Terlalu banyak percobaan. Coba lagi dalam ${detik} detik.`,
     };
   }
-  const a = DEFAULT_ADMIN;
-  const cocok =
-    String(username).trim().toLowerCase() ===
-      String(a.username).toLowerCase() &&
-    hashPassword(String(password)) === a.hash;
-  if (!cocok) {
+
+  if (!supabase) {
+    return { ok: false, error: "Koneksi ke server belum tersedia." };
+  }
+
+  const raw = String(username).trim().toLowerCase();
+  const email = raw.includes("@") ? raw : raw + EMAIL_DOMAIN;
+
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+  if (error) {
     gagal += 1;
     if (gagal >= 5) {
       gagal = 0;
@@ -386,26 +376,31 @@ export function login(username, password) {
     }
     return { ok: false, error: "Nama pengguna atau kata sandi salah." };
   }
+
   gagal = 0;
-  write("auth", a);
-  const r = write("session", {
-    username: a.username,
-    nama: a.nama,
-    exp: Date.now() + SESI_JAM * 36e5,
-  });
-  return r.ok ? { ok: true } : { ok: false, error: r.error };
+  // Muat ulang semua koleksi setelah login (agar pengaduan dll terbuka)
+  await reloadAll();
+  return { ok: true };
 }
 
-export function logout() {
-  removeKey("session");
+export async function logout() {
+  if (!supabase) return;
+  await supabase.auth.signOut();
+  // Bersihkan cache pengaduan (RLS: anon tidak bisa baca)
+  setCache("pengaduan", []);
+  await reloadAll();
 }
+
+/* ─── useTheme (tetap localStorage) ─────────────────────────────────────── */
+
+const THEME_KEY = "man1:theme";
 
 export function useTheme() {
   const t = useSyncExternalStore(
     subscribe,
     () => {
       try {
-        return window.localStorage.getItem(PREFIX + "theme") || "dark";
+        return window.localStorage.getItem(THEME_KEY) || "dark";
       } catch {
         return "dark";
       }
@@ -414,34 +409,143 @@ export function useTheme() {
   );
   const set = (v) => {
     try {
-      window.localStorage.setItem(PREFIX + "theme", v);
+      window.localStorage.setItem(THEME_KEY, v);
     } catch {}
     emit();
   };
   return [t, set];
 }
 
-export function trackView(path) {
-  if (typeof window === "undefined" || path.startsWith("/admin")) return;
-  try {
-    const s = read("stats");
-    const k = todayISO();
-    const cur = s.daily[k] || [0, 0];
-    let baru = false;
-    if (!window.sessionStorage.getItem(PREFIX + "visited")) {
-      window.sessionStorage.setItem(PREFIX + "visited", "1");
-      baru = true;
-    }
-    write("stats", {
-      ...s,
-      daily: { ...s.daily, [k]: [cur[0] + (baru ? 1 : 0), cur[1] + 1] },
-      pages: { ...s.pages, [path]: (s.pages[path] || 0) + 1 },
-    });
-  } catch {}
+/* ─── upsert & removeItem (async) ────────────────────────────────────────── */
+
+/** Peta name → nama tabel Supabase. */
+const TABLE = {
+  berita: "berita",
+  galeri: "galeri",
+  ekskul: "ekskul",
+  guru: "guru",
+  pengaduan: "pengaduan",
+};
+
+export async function upsert(name, item, { append: _append = false } = {}) {
+  if (!supabase) return { ok: false, error: "Koneksi ke server belum tersedia." };
+
+  if (name === "sekolah") {
+    // Sekolah disimpan sebagai jsonb tunggal
+    const { error } = await supabase
+      .from("sekolah")
+      .upsert({ id: 1, data: item });
+    if (error) return { ok: false, error: error.message };
+    await reload("sekolah");
+    return { ok: true };
+  }
+
+  const table = TABLE[name];
+  if (!table) return { ok: false, error: `Koleksi "${name}" tidak dikenal.` };
+
+  const { error } = await supabase.from(table).upsert(item);
+  if (error) return { ok: false, error: error.message };
+  await reload(name);
+  return { ok: true };
 }
 
-export const clearStats = () =>
-  write("stats", { sample: false, daily: {}, pages: {} });
+export async function removeItem(name, id) {
+  if (!supabase) return { ok: false, error: "Koneksi ke server belum tersedia." };
+
+  const table = TABLE[name];
+  if (!table) return { ok: false, error: `Koleksi "${name}" tidak dikenal.` };
+
+  const { error } = await supabase.from(table).delete().eq("id", id);
+  if (error) return { ok: false, error: error.message };
+  await reload(name);
+  return { ok: true };
+}
+
+/* ─── write (khusus sekolah) ─────────────────────────────────────────────── */
+
+/** Alias untuk upsert("sekolah", data) — dipakai di pengaturan/page.js. */
+export async function write(name, value) {
+  return upsert(name, value);
+}
+
+/* ─── trackView ──────────────────────────────────────────────────────────── */
+
+let statsReloadTimer = null;
+
+export function trackView(path) {
+  if (typeof window === "undefined" || path.startsWith("/admin")) return;
+  if (!supabase) return;
+
+  const baru = !window.sessionStorage.getItem("man1:visited");
+  if (baru) window.sessionStorage.setItem("man1:visited", "1");
+
+  supabase
+    .rpc("catat_kunjungan", { p_path: path, p_baru: baru })
+    .then(() => {
+      // Muat ulang stats agar dashboard ikut diperbarui (debounce 2 detik)
+      if (statsReloadTimer) clearTimeout(statsReloadTimer);
+      statsReloadTimer = setTimeout(() => {
+        loadStats();
+        statsReloadTimer = null;
+      }, 2000);
+    })
+    .catch(() => {});
+}
+
+/* ─── clearStats ─────────────────────────────────────────────────────────── */
+
+export async function clearStats() {
+  if (!supabase) return { ok: false, error: "Koneksi ke server belum tersedia." };
+  try {
+    await Promise.all([
+      supabase.from("kunjungan_harian").delete().not("tanggal", "is", null),
+      supabase.from("kunjungan_halaman").delete().not("path", "is", null),
+    ]);
+    await loadStats();
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e?.message || "Gagal mengosongkan statistik." };
+  }
+}
+
+/* ─── exportAll (baca dari Supabase) ────────────────────────────────────── */
+
+export async function exportAll() {
+  const data = {};
+  await Promise.all(
+    ["berita", "galeri", "ekskul", "guru", "sekolah", "pengaduan"].map(
+      async (k) => {
+        await reload(k);
+        data[k] = readCache(k);
+      }
+    )
+  );
+  return {
+    aplikasi: "man1-wonosobo-admin",
+    versi: 2,
+    dibuat: new Date().toISOString(),
+    data,
+  };
+}
+
+/* ─── Hapus semua pengaduan ──────────────────────────────────────────────── */
+
+export async function clearPengaduan() {
+  if (!supabase) return { ok: false, error: "Koneksi ke server belum tersedia." };
+  try {
+    const { error } = await supabase
+      .from("pengaduan")
+      .delete()
+      .not("id", "is", null);
+    if (error) throw error;
+    await loadPengaduan();
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e?.message || "Gagal menghapus pengaduan." };
+  }
+}
+
+/* ─── seriesDaily / seriesMonthly ────────────────────────────────────────── */
 
 export function seriesDaily(stats, n) {
   const now = new Date();
@@ -471,6 +575,8 @@ export function seriesMonthly(stats, year) {
   return arr;
 }
 
+/* ─── Utilitas umum ──────────────────────────────────────────────────────── */
+
 export const sum = (arr, f = (x) => x) => arr.reduce((a, x) => a + f(x), 0);
 export const pct = (a, b) => (b ? Math.round(((a - b) / b) * 1000) / 10 : null);
 export const fmt = (n) => new Intl.NumberFormat("id-ID").format(Math.round(n));
@@ -479,6 +585,29 @@ export const fmtRingkas = (n) =>
     notation: "compact",
     maximumFractionDigits: 1,
   }).format(n);
+
+export const uid = (p = "id") =>
+  `${p}-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+
+export function slugify(s) {
+  return (
+    String(s || "")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 60) || "berita"
+  );
+}
+
+export function uniqueSlug(judul, ids) {
+  const base = slugify(judul);
+  let s = base;
+  let n = 2;
+  while (ids.includes(s)) s = `${base}-${n++}`;
+  return s;
+}
 
 const LABEL_HALAMAN = {
   "/": "Beranda",
@@ -503,43 +632,4 @@ export function labelHalaman(path, berita = []) {
     return j.length > 42 ? j.slice(0, 40) + "…" : j;
   }
   return path;
-}
-
-const KOLEKSI_KONTEN = ["berita", "galeri", "ekskul", "guru", "sekolah"];
-
-export function exportAll() {
-  const data = {};
-  [...KOLEKSI_KONTEN, "pengaduan"].forEach((k) => (data[k] = read(k)));
-  return {
-    aplikasi: "man1-wonosobo-admin",
-    versi: 1,
-    dibuat: new Date().toISOString(),
-    data,
-  };
-}
-
-export function importAll(obj) {
-  if (
-    !obj ||
-    obj.aplikasi !== "man1-wonosobo-admin" ||
-    typeof obj.data !== "object"
-  ) {
-    return { ok: false, error: "Berkas bukan cadangan dari panel admin ini." };
-  }
-  const larik = ["berita", "galeri", "ekskul", "guru", "pengaduan"];
-  for (const k of larik) {
-    if (k in obj.data && !Array.isArray(obj.data[k]))
-      return { ok: false, error: `Data "${k}" tidak valid.` };
-  }
-  for (const k of [...larik, "sekolah"]) {
-    if (k in obj.data) {
-      const r = write(k, obj.data[k]);
-      if (!r.ok) return r;
-    }
-  }
-  return { ok: true };
-}
-
-export function resetKonten() {
-  KOLEKSI_KONTEN.forEach((k) => removeKey(k));
 }

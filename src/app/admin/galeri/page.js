@@ -12,21 +12,24 @@ export default function GaleriAdmin() {
 
   const buka = (g) => { setErr({}); setForm(g ? { ...g } : { judul: "", src: "" }); };
 
-  const simpan = () => {
+  const simpan = async () => {
     const e = {};
     if (!form.judul.trim()) e.judul = "Judul foto wajib diisi.";
     if (!form.src) e.src = "Pilih gambar terlebih dahulu.";
     setErr(e);
     if (Object.keys(e).length) return;
-    const r = upsert("galeri", { id: form.id || uid("galeri"), judul: form.judul.trim(), src: form.src });
+    const urutan = form.id
+      ? (list.find((g) => g.id === form.id)?.urutan ?? list.length + 1)
+      : list.length + 1;
+    const r = await upsert("galeri", { id: form.id || uid("galeri"), judul: form.judul.trim(), src: form.src, urutan });
     if (!r.ok) return toast(r.error, "error");
     toast(form.id ? "Foto diperbarui." : "Foto ditambahkan.");
     setForm(null);
   };
 
   const hapus = async (g) => {
-    if (!(await confirm({ title: "Hapus foto?", message: `Foto “${g.judul}” akan dihapus dari galeri.`, confirmLabel: "Hapus", tone: "danger" }))) return;
-    const r = removeItem("galeri", g.id);
+    if (!(await confirm({ title: "Hapus foto?", message: `Foto "${g.judul}" akan dihapus dari galeri.`, confirmLabel: "Hapus", tone: "danger" }))) return;
+    const r = await removeItem("galeri", g.id);
     r.ok ? toast("Foto dihapus.") : toast(r.error, "error");
   };
 

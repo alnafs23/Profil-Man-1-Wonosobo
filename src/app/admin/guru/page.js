@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Badge, Btn, Card, Empty, Field, IconBtn, Input, Modal, PageHead, Pager, SearchInput, Select, td, th, useUI } from "@/components/admin/ui";
-import { GOLONGAN, fmt, removeItem, uid, useCollection, write } from "@/lib/store";
+import { GOLONGAN, fmt, removeItem, uid, upsert, useCollection } from "@/lib/store";
 
 const PER = 10;
 const rank = (g) => { const i = GOLONGAN.indexOf(g); return i < 0 ? 99 : i; };
@@ -29,24 +29,42 @@ export default function GuruAdmin() {
 
   const buka = (g) => { setErr({}); setForm(g ? { ...g } : { nama: "", gol: "III/a" }); };
 
-  const simpan = () => {
+  const simpan = async () => {
     const e = {};
     if (!form.nama.trim()) e.nama = "Nama wajib diisi.";
     setErr(e);
     if (Object.keys(e).length) return;
+
+    const ada = list.some((x) => x.id === form.id);
     const item = { id: form.id || uid("guru"), nama: form.nama.trim(), gol: form.gol };
-    const ada = list.some((x) => x.id === item.id);
-    const next = ada ? list.map((x) => (x.id === item.id ? item : x)) : [...list, item];
-    next.sort((a, b) => rank(a.gol) - rank(b.gol)); // urut stabil berdasarkan golongan
-    const r = write("guru", next);
-    if (!r.ok) return toast(r.error, "error");
+
+    // Buat daftar baru, sort berdasarkan golongan, hitung urutan
+    const next = ada
+      ? list.map((x) => (x.id === item.id ? item : x))
+      : [...list, item];
+    next.sort((a, b) => rank(a.gol) - rank(b.gol));
+
+    // Upsert semua baris yang urutannya berubah
+    const toUpsert = next
+      .map((g, i) => ({ ...g, urutan: i + 1 }))
+      .filter((g, i) => {
+        const lama = list.find((x) => x.id === g.id);
+        return !lama || lama.urutan !== g.urutan || g.id === item.id;
+      });
+
+    let lastErr = null;
+    for (const row of toUpsert) {
+      const r = await upsert("guru", row);
+      if (!r.ok) { lastErr = r.error; break; }
+    }
+    if (lastErr) return toast(lastErr, "error");
     toast(ada ? "Data diperbarui." : "Data ditambahkan.");
     setForm(null);
   };
 
   const hapus = async (g) => {
     if (!(await confirm({ title: "Hapus data?", message: `${g.nama} akan dihapus dari daftar guru & tenaga kependidikan.`, confirmLabel: "Hapus", tone: "danger" }))) return;
-    const r = removeItem("guru", g.id);
+    const r = await removeItem("guru", g.id);
     r.ok ? toast("Data dihapus.") : toast(r.error, "error");
   };
 

@@ -191,7 +191,7 @@ function Shell({ children, path, session }) {
         </nav>
 
         <div className="border-t border-white/10 px-4 py-3 text-[11px] leading-snug text-[#7c869b]">
-          Data tersimpan di browser ini (localStorage).
+          Data tersimpan di Supabase.
         </div>
       </aside>
 
